@@ -17,7 +17,7 @@ func TestCurrentUser(t *testing.T) {
 	identity := CurrentUser(ctx)
 	if assert.NotNil(t, identity) {
 		assert.Equal(t, "100", identity.GetID())
-		assert.Equal(t, "test", identity.GetName())
+		assert.Equal(t, "test", identity.GetEmail())
 	}
 }
 
@@ -40,7 +40,7 @@ func Test_handleToken(t *testing.T) {
 	identity := CurrentUser(ctx.Request.Context())
 	if assert.NotNil(t, identity) {
 		assert.Equal(t, "100", identity.GetID())
-		assert.Equal(t, "test", identity.GetName())
+		assert.Equal(t, "test", identity.GetEmail())
 	}
 }
 

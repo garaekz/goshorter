@@ -31,8 +31,8 @@ func Test_service_GenerateJWT(t *testing.T) {
 	logger, _ := log.NewForTest()
 	s := service{"test", 100, logger}
 	token, err := s.generateJWT(entity.User{
-		ID:   "100",
-		Name: "demo",
+		ID:    "100",
+		Email: "demo@test.io",
 	})
 	if assert.Nil(t, err) {
 		assert.NotEmpty(t, token)

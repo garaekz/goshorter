@@ -50,8 +50,8 @@ const (
 )
 
 // WithUser returns a context that contains the user identity from the given JWT.
-func WithUser(ctx context.Context, id, name string) context.Context {
-	return context.WithValue(ctx, userKey, entity.User{ID: id, Name: name})
+func WithUser(ctx context.Context, id, email string) context.Context {
+	return context.WithValue(ctx, userKey, entity.User{ID: id, Email: email})
 }
 
 // CurrentUser returns the user identity from the given context.
