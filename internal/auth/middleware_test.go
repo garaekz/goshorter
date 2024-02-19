@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/garaekz/go-rest-api/internal/test"
+	"github.com/garaekz/goshorter/internal/test"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/stretchr/testify/assert"
 )

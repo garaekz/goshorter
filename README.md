@@ -1,9 +1,9 @@
 # Go RESTful API Starter Kit (Boilerplate)
 
-[![GoDoc](https://godoc.org/github.com/garaekz/go-rest-api?status.png)](http://godoc.org/github.com/garaekz/go-rest-api)
-[![Build Status](https://github.com/garaekz/go-rest-api/actions/workflows/build.yml/badge.svg)](https://github.com/garaekz/go-rest-api/actions/workflows/build.yml)
+[![GoDoc](https://godoc.org/github.com/garaekz/goshorter?status.png)](http://godoc.org/github.com/garaekz/goshorter)
+[![Build Status](https://github.com/garaekz/goshorter/actions/workflows/build.yml/badge.svg)](https://github.com/garaekz/goshorter/actions/workflows/build.yml)
 [![Codecov](https://codecov.io/gh/garaekz/go-rest-api/graph/badge.svg?token=7IF0YCSFY5)](https://codecov.io/gh/garaekz/go-rest-api)
-[![Go Report](https://goreportcard.com/badge/github.com/garaekz/go-rest-api)](https://goreportcard.com/report/github.com/garaekz/go-rest-api)
+[![Go Report](https://goreportcard.com/badge/github.com/garaekz/goshorter)](https://goreportcard.com/report/github.com/garaekz/goshorter)
 
 This starter kit is designed to get you up and running with a project structure optimized for developing
 RESTful API services in Go. It promotes the best practices that follow the [SOLID principles](https://en.wikipedia.org/wiki/SOLID)

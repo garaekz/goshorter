@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"runtime/debug"
 
-	"github.com/garaekz/go-rest-api/pkg/log"
+	"github.com/garaekz/goshorter/pkg/log"
 	routing "github.com/garaekz/ozzo-routing"
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 )

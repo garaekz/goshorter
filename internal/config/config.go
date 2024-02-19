@@ -3,7 +3,7 @@ package config
 import (
 	"os"
 
-	"github.com/garaekz/go-rest-api/pkg/log"
+	"github.com/garaekz/goshorter/pkg/log"
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/qiangxue/go-env"
 	"gopkg.in/yaml.v2"

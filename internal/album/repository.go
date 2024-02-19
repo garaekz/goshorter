@@ -3,9 +3,9 @@ package album
 import (
 	"context"
 
-	"github.com/garaekz/go-rest-api/internal/entity"
-	"github.com/garaekz/go-rest-api/pkg/dbcontext"
-	"github.com/garaekz/go-rest-api/pkg/log"
+	"github.com/garaekz/goshorter/internal/entity"
+	"github.com/garaekz/goshorter/pkg/dbcontext"
+	"github.com/garaekz/goshorter/pkg/log"
 )
 
 // Repository encapsulates the logic to access albums from the data source.

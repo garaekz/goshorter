@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/garaekz/go-rest-api/internal/entity"
-	"github.com/garaekz/go-rest-api/internal/test"
-	"github.com/garaekz/go-rest-api/pkg/log"
+	"github.com/garaekz/goshorter/internal/entity"
+	"github.com/garaekz/goshorter/internal/test"
+	"github.com/garaekz/goshorter/pkg/log"
 	"github.com/stretchr/testify/assert"
 )
 

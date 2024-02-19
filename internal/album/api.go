@@ -3,9 +3,9 @@ package album
 import (
 	"net/http"
 
-	"github.com/garaekz/go-rest-api/internal/errors"
-	"github.com/garaekz/go-rest-api/pkg/log"
-	"github.com/garaekz/go-rest-api/pkg/pagination"
+	"github.com/garaekz/goshorter/internal/errors"
+	"github.com/garaekz/goshorter/pkg/log"
+	"github.com/garaekz/goshorter/pkg/pagination"
 	routing "github.com/garaekz/ozzo-routing"
 )
 

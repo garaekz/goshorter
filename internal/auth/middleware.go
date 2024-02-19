@@ -7,8 +7,8 @@ import (
 	routing "github.com/garaekz/ozzo-routing"
 	"github.com/garaekz/ozzo-routing/auth"
 
-	"github.com/garaekz/go-rest-api/internal/entity"
-	"github.com/garaekz/go-rest-api/internal/errors"
+	"github.com/garaekz/goshorter/internal/entity"
+	"github.com/garaekz/goshorter/internal/errors"
 	"github.com/golang-jwt/jwt/v5"
 )
 

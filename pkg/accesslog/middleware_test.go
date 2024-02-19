@@ -5,7 +5,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/garaekz/go-rest-api/pkg/log"
+	"github.com/garaekz/goshorter/pkg/log"
 	routing "github.com/garaekz/ozzo-routing"
 	"github.com/stretchr/testify/assert"
 )

@@ -4,9 +4,9 @@ import (
 	"net/http"
 	"net/http/httptest"
 
-	"github.com/garaekz/go-rest-api/internal/errors"
-	"github.com/garaekz/go-rest-api/pkg/accesslog"
-	"github.com/garaekz/go-rest-api/pkg/log"
+	"github.com/garaekz/goshorter/internal/errors"
+	"github.com/garaekz/goshorter/pkg/accesslog"
+	"github.com/garaekz/goshorter/pkg/log"
 	routing "github.com/garaekz/ozzo-routing"
 	"github.com/garaekz/ozzo-routing/content"
 	"github.com/garaekz/ozzo-routing/cors"

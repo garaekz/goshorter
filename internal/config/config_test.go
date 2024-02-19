@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/garaekz/go-rest-api/pkg/log"
+	"github.com/garaekz/goshorter/pkg/log"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

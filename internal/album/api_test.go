@@ -5,10 +5,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/garaekz/go-rest-api/internal/auth"
-	"github.com/garaekz/go-rest-api/internal/entity"
-	"github.com/garaekz/go-rest-api/internal/test"
-	"github.com/garaekz/go-rest-api/pkg/log"
+	"github.com/garaekz/goshorter/internal/auth"
+	"github.com/garaekz/goshorter/internal/entity"
+	"github.com/garaekz/goshorter/internal/test"
+	"github.com/garaekz/goshorter/pkg/log"
 )
 
 func TestAPI(t *testing.T) {
