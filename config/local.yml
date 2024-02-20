@@ -1,2 +1,11 @@
+base_url: "http://localhost"
 dsn: "postgres://127.0.0.1/go_restful?sslmode=disable&user=postgres&password=postgres"
 jwt_signing_key: "LxsKJywDL5O5PvgODZhBH12KE6k2yL8E"
+secret_key: "J5jFrcja3feMApVffoW2e4GT77BoVFRsPbjbTvT5PqTiY3g84dWRS773TNgJ5AC5"
+smtp_config:
+  host: "127.0.0.1"
+  port: 1025
+  username: null
+  password: null
+  from_email: "mailer@test.io"
+  from_name: "Test Mailer"

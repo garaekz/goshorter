@@ -17,6 +17,7 @@ import (
 	"github.com/garaekz/goshorter/pkg/accesslog"
 	"github.com/garaekz/goshorter/pkg/dbcontext"
 	"github.com/garaekz/goshorter/pkg/log"
+	"github.com/garaekz/goshorter/pkg/sendmail"
 	routing "github.com/garaekz/ozzo-routing"
 	"github.com/garaekz/ozzo-routing/content"
 	"github.com/garaekz/ozzo-routing/cors"
@@ -93,8 +94,23 @@ func buildHandler(logger log.Logger, db *dbcontext.DB, cfg *config.Config) http.
 		authJWTHandler, logger,
 	)
 
+	authCfg := auth.ServiceConfig{
+		SigningKey:      cfg.JWTSigningKey,
+		SecretKey:       cfg.SecretKey,
+		TokenExpiration: cfg.JWTExpiration,
+		BaseURL:         cfg.BaseURL,
+		ServerPort:      cfg.ServerPort,
+		Mailer: sendmail.Mailer{
+			Host:      cfg.SMTPConfig.Host,
+			Port:      cfg.SMTPConfig.Port,
+			Username:  cfg.SMTPConfig.Username,
+			Password:  cfg.SMTPConfig.Password,
+			FromName:  cfg.SMTPConfig.FromName,
+			FromEmail: cfg.SMTPConfig.FromEmail,
+		},
+	}
 	auth.RegisterHandlers(rg.Group(""),
-		auth.NewService(auth.NewRepository(db, logger), cfg.JWTSigningKey, cfg.JWTExpiration, logger),
+		auth.NewService(auth.NewRepository(db, logger), logger, authCfg),
 		logger,
 	)
 

@@ -2,12 +2,15 @@ package auth
 
 import (
 	"context"
+	"crypto/sha1"
 	defaultErrors "errors"
+	"fmt"
 	"time"
 
 	"github.com/garaekz/goshorter/internal/entity"
 	"github.com/garaekz/goshorter/internal/errors"
 	"github.com/garaekz/goshorter/pkg/log"
+	"github.com/garaekz/goshorter/pkg/sendmail"
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-ozzo/ozzo-validation/v4/is"
 	"github.com/golang-jwt/jwt/v5"
@@ -33,15 +36,23 @@ type Identity interface {
 }
 
 type service struct {
-	repo            Repository
-	signingKey      string
-	tokenExpiration int
-	logger          log.Logger
+	repo   Repository
+	logger log.Logger
+	cfg    ServiceConfig
+}
+
+type ServiceConfig struct {
+	SigningKey      string
+	SecretKey       string
+	TokenExpiration int
+	BaseURL         string
+	ServerPort      int
+	Mailer          sendmail.Mailer
 }
 
 // NewService creates a new authentication service.
-func NewService(repo Repository, signingKey string, tokenExpiration int, logger log.Logger) Service {
-	return service{repo, signingKey, tokenExpiration, logger}
+func NewService(repo Repository, logger log.Logger, cfg ServiceConfig) Service {
+	return service{repo, logger, cfg}
 }
 
 var errDuplicateEmail = defaultErrors.New(`pq: duplicate key value violates unique constraint "users_email_key"`)
@@ -49,17 +60,17 @@ var errDuplicateUsername = defaultErrors.New(`pq: duplicate key value violates u
 
 // RegisterRequest represents a user registration request.
 type RegisterRequest struct {
-	FirsName string `json:"first_name"`
-	LastName string `json:"last_name"`
-	Username string `json:"username"`
-	Password string `json:"password"`
-	Email    string `json:"email"`
+	FirstName string `json:"first_name"`
+	LastName  string `json:"last_name"`
+	Username  string `json:"username"`
+	Password  string `json:"password"`
+	Email     string `json:"email"`
 }
 
 // Validate validates the RegisterRequest fields.
 func (m RegisterRequest) Validate() error {
 	return validation.ValidateStruct(&m,
-		validation.Field(&m.FirsName, validation.Required, validation.Length(0, 128)),
+		validation.Field(&m.FirstName, validation.Required, validation.Length(0, 128)),
 		validation.Field(&m.LastName, validation.Required, validation.Length(0, 128)),
 		validation.Field(&m.Username, validation.Required, validation.Length(0, 128)),
 		validation.Field(&m.Password, validation.Required, validation.Length(0, 128)),
@@ -73,7 +84,6 @@ func (s service) Register(ctx context.Context, req RegisterRequest) (User, error
 		return User{}, err
 	}
 
-	id := entity.GenerateID()
 	password, err := entity.HashPassword(req.Password)
 	if err != nil {
 		return User{}, err
@@ -81,8 +91,8 @@ func (s service) Register(ctx context.Context, req RegisterRequest) (User, error
 
 	now := time.Now()
 	user := entity.User{
-		ID:        id,
-		FirstName: req.FirsName,
+		ID:        entity.GenerateID(),
+		FirstName: req.FirstName,
 		LastName:  req.LastName,
 		Username:  req.Username,
 		Password:  password,
@@ -90,7 +100,6 @@ func (s service) Register(ctx context.Context, req RegisterRequest) (User, error
 		CreatedAt: now,
 		UpdatedAt: now,
 	}
-
 	err = s.repo.Register(ctx, user)
 	if err != nil {
 		if err.Error() == errDuplicateEmail.Error() {
@@ -100,6 +109,11 @@ func (s service) Register(ctx context.Context, req RegisterRequest) (User, error
 			return User{}, errors.BadRequest("username already exists")
 		}
 
+		return User{}, err
+	}
+
+	err = s.cfg.Mailer.SendValidateAccountMail(ctx, user.Email, user.ID, s.cfg.BaseURL, s.cfg.SecretKey, s.cfg.ServerPort)
+	if err != nil {
 		return User{}, err
 	}
 
@@ -135,6 +149,14 @@ func (s service) generateJWT(identity Identity) (string, error) {
 	return jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"id":    identity.GetID(),
 		"email": identity.GetEmail(),
-		"exp":   time.Now().Add(time.Duration(s.tokenExpiration) * time.Hour).Unix(),
-	}).SignedString([]byte(s.signingKey))
+		"exp":   time.Now().Add(time.Duration(s.cfg.TokenExpiration) * time.Hour).Unix(),
+	}).SignedString([]byte(s.cfg.SigningKey))
+}
+
+// generateEmailVerificationHash generates a hash for email verification.
+func generateEmailVerificationHash(email string) string {
+	hash := sha1.New()
+	hash.Write([]byte(email))
+	bs := hash.Sum(nil)
+	return fmt.Sprintf("%x", bs)
 }

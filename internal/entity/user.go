@@ -9,14 +9,15 @@ import (
 
 // User represents a user.
 type User struct {
-	ID        string
-	FirstName string
-	LastName  string
-	Email     string
-	Username  string
-	Password  string
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	ID         string
+	FirstName  string
+	LastName   string
+	Email      string
+	Username   string
+	Password   string
+	VerifiedAt *time.Time
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
 }
 
 // TableName represents the table name

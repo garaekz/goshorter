@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confirmación de Email</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            background-color: #fff;
+            max-width: 600px;
+            margin: auto;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            background-color: #007bff;
+            color: #ffffff;
+            padding: 10px;
+            text-align: center;
+            border-radius: 8px 8px 0 0;
+        }
+        .content {
+            padding: 20px;
+            text-align: center;
+        }
+        .footer {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+        }
+        .button {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: #ffffff;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Welcome to GoShorter</h1>
+        </div>
+        <div class="content">
+            <p>You're almost ready to start using GoShorter. To complete your registration, we just need to verify your email address.</p>
+            <a href="{{.URL}}" class="button">
+                Verify Email
+            </a>
+            <p>If you can't click the button, you can also verify your email by copying and pasting the following link into your browser:</p>
+            <p><a href="{{.URL}}">{{.URL}}</a></p>
+        </div>
+        <div class="footer">
+            <p>If you have any questions, please contact us at <a href="mailto:garaekz@gmail.com">garaekz@gmail.com</a>.</p>
+            <p>© {{.Year}} GoShorter. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>
