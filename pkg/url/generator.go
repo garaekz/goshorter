@@ -34,13 +34,8 @@ func SignedRoute(baseURL, secret, path string, params map[string]string, expirat
 	}
 
 	signature := generateSignature(secret, path, params, expirationStr)
-	if len(params) > 0 {
-		path += "?"
-	}
-	for k, v := range params {
-		path += fmt.Sprintf("&%s=%s", k, url.QueryEscape(v))
-	}
-	return fmt.Sprintf("%s%s&sig=%s", baseURL, path, url.QueryEscape(signature))
+	paramString := generateParamString(params, expirationStr)
+	return fmt.Sprintf("%s%s?%s&sig=%s", baseURL, path, paramString, url.QueryEscape(signature))
 }
 
 // VerifySignature verifies the signature of a signed URL.
@@ -67,27 +62,40 @@ func generateSignature(secret, path string, params map[string]string, expiration
 		params = make(map[string]string)
 	}
 
-	// Add expiration to the parameters if provided
-	if expiration != "" {
-		params["exp"] = expiration
+	paramString := generateParamString(params, expiration)
+	signatureData := fmt.Sprintf("%s?%s", path, paramString)
+
+	signer := &HMACSigner{SecretKey: secret}
+	return signer.GenerateHash(signatureData)
+}
+
+func generateParamString(params map[string]string, expiration string) string {
+	var paramString string
+	var keys []string
+
+	// Check if 'exp' is present and remove it temporarily
+	_, expPresent := params["exp"]
+	if expPresent {
+		delete(params, "exp")
 	}
 
 	// Order the parameters by key to ensure consistent signature
-	var keys []string
 	for k := range params {
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)
 
-	var paramString string
 	for _, k := range keys {
 		paramString += fmt.Sprintf("&%s=%s", k, url.QueryEscape(params[k]))
 	}
-	if len(paramString) > 0 {
-		paramString = paramString[1:] // Eliminar '&' inicial
+
+	if expPresent || expiration != "" {
+		paramString += fmt.Sprintf("&exp=%s", url.QueryEscape(expiration))
 	}
 
-	signatureData := fmt.Sprintf("%s?%s", path, paramString)
-	signer := &HMACSigner{SecretKey: secret}
-	return signer.GenerateHash(signatureData)
+	if len(paramString) > 0 {
+		paramString = paramString[1:]
+	}
+
+	return paramString
 }

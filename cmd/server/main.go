@@ -94,20 +94,26 @@ func buildHandler(logger log.Logger, db *dbcontext.DB, cfg *config.Config) http.
 		authJWTHandler, logger,
 	)
 
+	smtpSender := &sendmail.SMTPAdapter{}
+	templateParser := &sendmail.TemplateAdapter{}
+	mailer := sendmail.Mailer{
+		Host:      cfg.SMTPConfig.Host,
+		Port:      cfg.SMTPConfig.Port,
+		Username:  cfg.SMTPConfig.Username,
+		Password:  cfg.SMTPConfig.Password,
+		FromName:  cfg.SMTPConfig.FromName,
+		FromEmail: cfg.SMTPConfig.FromEmail,
+		Sender:    smtpSender,
+		Templates: templateParser,
+	}
+
 	authCfg := auth.ServiceConfig{
 		SigningKey:      cfg.JWTSigningKey,
 		SecretKey:       cfg.SecretKey,
 		TokenExpiration: cfg.JWTExpiration,
 		BaseURL:         cfg.BaseURL,
 		ServerPort:      cfg.ServerPort,
-		Mailer: sendmail.Mailer{
-			Host:      cfg.SMTPConfig.Host,
-			Port:      cfg.SMTPConfig.Port,
-			Username:  cfg.SMTPConfig.Username,
-			Password:  cfg.SMTPConfig.Password,
-			FromName:  cfg.SMTPConfig.FromName,
-			FromEmail: cfg.SMTPConfig.FromEmail,
-		},
+		Mailer:          mailer,
 	}
 	auth.RegisterHandlers(rg.Group(""), router.Group(""),
 		auth.NewService(auth.NewRepository(db, logger), logger, authCfg),

@@ -2,7 +2,6 @@ package sendmail
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"html/template"
 	"net/smtp"
@@ -12,7 +11,17 @@ import (
 	"github.com/garaekz/goshorter/pkg/url"
 )
 
-// Mailer is a mailer that sends emails using SMTP.
+// SMTPSender defines the interface for sending emails.
+type SMTPSender interface {
+	SendMail(addr string, a smtp.Auth, from string, to []string, msg []byte) error
+}
+
+// TemplateParser defines the interface for parsing and executing email templates.
+type TemplateParser interface {
+	ParseAndExecute(templateName string, data interface{}) (string, error)
+}
+
+// Mailer is a mailer that sends emails using SMTP and parses email templates.
 type Mailer struct {
 	Host      string
 	Username  string
@@ -20,30 +29,45 @@ type Mailer struct {
 	Port      int
 	FromEmail string
 	FromName  string
+	Sender    SMTPSender
+	Templates TemplateParser
 }
 
-// SendMail sends an email.
-func (m Mailer) SendMail(_ context.Context, to, subject, templateName string, data interface{}) error {
+// SMTPAdapter is an adapter for the smtp.SendMail function.
+type SMTPAdapter struct{}
+
+// SendMail sends an email using the smtp.SendMail function.
+func (SMTPAdapter) SendMail(addr string, a smtp.Auth, from string, to []string, msg []byte) error {
+	return smtp.SendMail(addr, a, from, to, msg)
+}
+
+// TemplateAdapter is an adapter for parsing and executing email templates using the html/template package.
+type TemplateAdapter struct{}
+
+// ParseAndExecute parses and executes an email template using the html/template package.
+func (TemplateAdapter) ParseAndExecute(templateName string, data interface{}) (string, error) {
 	t, err := template.ParseFiles(templateName)
 	if err != nil {
-		return fmt.Errorf("error parsing template: %w", err)
+		return "", fmt.Errorf("error parsing template: %w", err)
 	}
 
 	var body bytes.Buffer
-	mimeHeaders := "From: " + m.FromName + " <" + m.FromEmail + ">\n" +
-		"To: " + to + "\n" +
-		"Subject: " + subject + "\n" +
-		"MIME-version: 1.0;\n" +
-		"Content-Type: text/html; charset=\"UTF-8\";\n\n"
-
-	_, err = body.Write([]byte(mimeHeaders))
-	if err != nil {
-		return fmt.Errorf("error writing mime headers: %w", err)
-	}
-
 	if err := t.Execute(&body, data); err != nil {
-		return fmt.Errorf("error executing template: %w", err)
+		return "", fmt.Errorf("error executing template: %w", err)
 	}
+
+	return body.String(), nil
+}
+
+// SendTemplateEmail sends an email using the specified SMTP settings and email template.
+func (m Mailer) SendTemplateEmail(to, subject, templateName string, data interface{}) error {
+	renderedTemplate, err := m.Templates.ParseAndExecute(templateName, data)
+	if err != nil {
+		return err
+	}
+
+	mimeHeaders := fmt.Sprintf("From: %s <%s>\nTo: %s\nSubject: %s\nMIME-version: 1.0;\nContent-Type: text/html; charset=\"UTF-8\";\n\n", m.FromName, m.FromEmail, to, subject)
+	fullMessage := mimeHeaders + renderedTemplate
 
 	address := fmt.Sprintf("%s:%d", m.Host, m.Port)
 	var auth smtp.Auth
@@ -51,11 +75,11 @@ func (m Mailer) SendMail(_ context.Context, to, subject, templateName string, da
 		auth = smtp.PlainAuth("", m.Username, m.Password, m.Host)
 	}
 
-	return smtp.SendMail(address, auth, m.FromEmail, []string{to}, body.Bytes())
+	return m.Sender.SendMail(address, auth, m.FromEmail, []string{to}, []byte(fullMessage))
 }
 
 // SendValidateAccountMail sends a validate account email.
-func (m Mailer) SendValidateAccountMail(ctx context.Context, to, userID, baseURL, secret string, port int) error {
+func (m Mailer) SendValidateAccountMail(to, userID, baseURL, secret string, port int) error {
 	subject := "Welcome to GoShorter! Please verify your email address."
 	templatePath, err := filepath.Abs("./templates/mail/verify_email.html")
 	if err != nil {
@@ -73,7 +97,7 @@ func (m Mailer) SendValidateAccountMail(ctx context.Context, to, userID, baseURL
 		Year: time.Now().Year(),
 	}
 
-	return m.SendMail(ctx, to, subject, templatePath, data)
+	return m.SendTemplateEmail(to, subject, templatePath, data)
 }
 
 // getPortSuffix returns the port or an empty string if it's 80 or 443.

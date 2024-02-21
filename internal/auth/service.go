@@ -52,7 +52,7 @@ type ServiceConfig struct {
 
 // Mailer represents an email service.
 type Mailer interface {
-	SendValidateAccountMail(ctx context.Context, email, userID, baseURL, secretKey string, serverPort int) error
+	SendValidateAccountMail(email, userID, baseURL, secretKey string, serverPort int) error
 }
 
 // NewService creates a new authentication service.
@@ -105,19 +105,19 @@ func (s service) Register(ctx context.Context, req RegisterRequest) (User, error
 		CreatedAt: now,
 		UpdatedAt: now,
 	}
-	err = s.repo.Register(ctx, user)
-	if err != nil {
-		if err.Error() == errDuplicateEmail.Error() {
-			return User{}, errors.BadRequest("email already exists")
-		}
-		if err.Error() == errDuplicateUsername.Error() {
-			return User{}, errors.BadRequest("username already exists")
-		}
+	// err = s.repo.Register(ctx, user)
+	// if err != nil {
+	// 	if err.Error() == errDuplicateEmail.Error() {
+	// 		return User{}, errors.BadRequest("email already exists")
+	// 	}
+	// 	if err.Error() == errDuplicateUsername.Error() {
+	// 		return User{}, errors.BadRequest("username already exists")
+	// 	}
 
-		return User{}, err
-	}
+	// 	return User{}, err
+	// }
 
-	err = s.cfg.Mailer.SendValidateAccountMail(ctx, user.Email, user.ID, s.cfg.BaseURL, s.cfg.SecretKey, s.cfg.ServerPort)
+	err = s.cfg.Mailer.SendValidateAccountMail(user.Email, user.ID, s.cfg.BaseURL, s.cfg.SecretKey, s.cfg.ServerPort)
 	if err != nil {
 		return User{}, err
 	}
