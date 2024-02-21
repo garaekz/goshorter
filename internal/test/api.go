@@ -2,12 +2,13 @@ package test
 
 import (
 	"bytes"
-	routing "github.com/garaekz/ozzo-routing"
-	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	routing "github.com/garaekz/ozzo-routing"
+	"github.com/stretchr/testify/assert"
 )
 
 // APITestCase represents the data needed to describe an API test case.
@@ -38,7 +39,7 @@ func Endpoint(t *testing.T, router *routing.Router, tc APITestCase) {
 			if pattern != tc.WantResponse {
 				assert.Contains(t, res.Body.String(), pattern, "response mismatch")
 			} else {
-				assert.JSONEq(t, tc.WantResponse, res.Body.String(), "response mismatch")
+				assert.JSONEq(t, tc.WantResponse, res.Body.String(), "response mismatch1")
 			}
 		}
 	})

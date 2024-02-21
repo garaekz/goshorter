@@ -3,13 +3,12 @@ package auth
 import (
 	"context"
 	defaultErrors "errors"
-	"fmt"
 	"time"
 
 	"github.com/garaekz/goshorter/internal/entity"
 	"github.com/garaekz/goshorter/internal/errors"
 	"github.com/garaekz/goshorter/pkg/log"
-	"github.com/garaekz/goshorter/pkg/sendmail"
+	"github.com/garaekz/goshorter/pkg/url"
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-ozzo/ozzo-validation/v4/is"
 	"github.com/golang-jwt/jwt/v5"
@@ -19,7 +18,7 @@ import (
 type Service interface {
 	Register(ctx context.Context, input RegisterRequest) (User, error)
 	Login(ctx context.Context, username, credType, password string) (string, error)
-	Verify(ctx context.Context, userId, signature, expiration string) error
+	Verify(ctx context.Context, userID, signature, expiration string) error
 }
 
 // User represents a user data.
@@ -41,13 +40,19 @@ type service struct {
 	cfg    ServiceConfig
 }
 
+// ServiceConfig represents the configuration settings for the authentication service.
 type ServiceConfig struct {
 	SigningKey      string
 	SecretKey       string
 	TokenExpiration int
 	BaseURL         string
 	ServerPort      int
-	Mailer          sendmail.Mailer
+	Mailer          Mailer
+}
+
+// Mailer represents an email service.
+type Mailer interface {
+	SendValidateAccountMail(ctx context.Context, email, userID, baseURL, secretKey string, serverPort int) error
 }
 
 // NewService creates a new authentication service.
@@ -120,7 +125,28 @@ func (s service) Register(ctx context.Context, req RegisterRequest) (User, error
 	return User{user}, nil
 }
 
-func (s service) Verify(ctx context.Context, userId, signature, expiration string) error {
+func (s service) Verify(ctx context.Context, userID, signature, expiration string) error {
+	if valid := url.VerifySignature("/verify", signature, expiration, s.cfg.SecretKey, map[string]string{"id": userID}); !valid {
+		return errors.BadRequest("invalid verification link")
+	}
+
+	user, err := s.repo.FindUserByID(ctx, userID)
+	if err != nil {
+		return err
+	}
+
+	if user.VerifiedAt != nil {
+		return errors.BadRequest("user already verified")
+	}
+
+	now := time.Now()
+	user.VerifiedAt = &now
+
+	err = s.repo.Update(ctx, *user)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -164,7 +190,6 @@ func (s service) authenticate(ctx context.Context, credential, credType, passwor
 		user = userData
 	}
 
-	fmt.Println(user)
 	validPass := entity.CheckPasswordHash(password, user.Password)
 	if validPass {
 		return user

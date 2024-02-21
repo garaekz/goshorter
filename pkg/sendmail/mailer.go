@@ -23,7 +23,7 @@ type Mailer struct {
 }
 
 // SendMail sends an email.
-func (m Mailer) SendMail(ctx context.Context, to, subject, templateName string, data interface{}) error {
+func (m Mailer) SendMail(_ context.Context, to, subject, templateName string, data interface{}) error {
 	t, err := template.ParseFiles(templateName)
 	if err != nil {
 		return fmt.Errorf("error parsing template: %w", err)
@@ -35,23 +35,23 @@ func (m Mailer) SendMail(ctx context.Context, to, subject, templateName string, 
 		"Subject: " + subject + "\n" +
 		"MIME-version: 1.0;\n" +
 		"Content-Type: text/html; charset=\"UTF-8\";\n\n"
-	body.Write([]byte(mimeHeaders))
+
+	_, err = body.Write([]byte(mimeHeaders))
+	if err != nil {
+		return fmt.Errorf("error writing mime headers: %w", err)
+	}
 
 	if err := t.Execute(&body, data); err != nil {
 		return fmt.Errorf("error executing template: %w", err)
 	}
 
 	address := fmt.Sprintf("%s:%d", m.Host, m.Port)
-	var auth smtp.Auth = nil
+	var auth smtp.Auth
 	if m.Username != "" && m.Password != "" {
 		auth = smtp.PlainAuth("", m.Username, m.Password, m.Host)
 	}
 
-	if err := smtp.SendMail(address, auth, m.FromEmail, []string{to}, body.Bytes()); err != nil {
-		return err
-	}
-
-	return nil
+	return smtp.SendMail(address, auth, m.FromEmail, []string{to}, body.Bytes())
 }
 
 // SendValidateAccountMail sends a validate account email.
@@ -62,9 +62,8 @@ func (m Mailer) SendValidateAccountMail(ctx context.Context, to, userID, baseURL
 		return fmt.Errorf("error getting template path: %w", err)
 	}
 
-	signer := &url.HMACSigner{SecretKey: secret}
 	fullBaseURL := fmt.Sprintf("%s%s", baseURL, getPortSuffix(port))
-	verificationURL := url.TemporarySignedRoute(fullBaseURL, signer, "/verify", 24*time.Hour, map[string]string{"id": userID})
+	verificationURL := url.TemporarySignedRoute(fullBaseURL, secret, "/verify", 24*time.Hour, map[string]string{"id": userID})
 
 	data := struct {
 		URL  string

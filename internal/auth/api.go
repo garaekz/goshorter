@@ -22,6 +22,12 @@ type resource struct {
 	logger  log.Logger
 }
 
+type response struct {
+	Status  string      `json:"status"`
+	Message string      `json:"message"`
+	Data    interface{} `json:"data,omitempty"`
+}
+
 // register returns a handler that handles user registration request.
 func (r resource) register(c *routing.Context) error {
 	var input RegisterRequest
@@ -44,10 +50,17 @@ func (r resource) verify(c *routing.Context) error {
 	sig := c.Query("sig")
 
 	if exp == "" || id == "" || sig == "" {
-		return errors.BadRequest("invalid request")
+		return errors.BadRequest("Invalid request")
 	}
 
-	return c.WriteWithStatus(nil, http.StatusOK)
+	if err := r.service.Verify(c.Request.Context(), id, sig, exp); err != nil {
+		return err
+	}
+
+	return c.WriteWithStatus(response{
+		Status:  "success",
+		Message: "Your account has been verified. You can now login.",
+	}, http.StatusOK)
 }
 
 // login returns a handler that handles user login request.
@@ -84,8 +97,10 @@ func login(service Service, logger log.Logger) routing.Handler {
 			return err
 		}
 
-		return c.Write(struct {
-			Token string `json:"token"`
-		}{token})
+		return c.WriteWithStatus(response{
+			Status:  "success",
+			Message: "You have been successfully logged in.",
+			Data:    map[string]string{"token": token},
+		}, http.StatusOK)
 	}
 }
