@@ -2,7 +2,6 @@ package auth
 
 import (
 	"context"
-	"crypto/sha1"
 	defaultErrors "errors"
 	"fmt"
 	"time"
@@ -19,7 +18,8 @@ import (
 // Service encapsulates the authentication logic.
 type Service interface {
 	Register(ctx context.Context, input RegisterRequest) (User, error)
-	Login(ctx context.Context, username, password string) (string, error)
+	Login(ctx context.Context, username, credType, password string) (string, error)
+	Verify(ctx context.Context, userId, signature, expiration string) error
 }
 
 // User represents a user data.
@@ -120,24 +120,54 @@ func (s service) Register(ctx context.Context, req RegisterRequest) (User, error
 	return User{user}, nil
 }
 
-// Login authenticates a user and generates a JWT token if authentication succeeds.
-// Otherwise, an error is returned.
-func (s service) Login(ctx context.Context, username, password string) (string, error) {
-	if identity := s.authenticate(ctx, username, password); identity != nil {
-		return s.generateJWT(identity)
-	}
-	return "", errors.Unauthorized("")
+func (s service) Verify(ctx context.Context, userId, signature, expiration string) error {
+	return nil
 }
 
-// authenticate authenticates a user using username and password.
-// If username and password are correct, an identity is returned. Otherwise, nil is returned.
-func (s service) authenticate(ctx context.Context, username, password string) Identity {
-	logger := s.logger.With(ctx, "user", username)
+// Login authenticates a user and generates a JWT token if authentication succeeds.
+// Otherwise, an error is returned.
+func (s service) Login(ctx context.Context, username, credType, password string) (string, error) {
+	if identity := s.authenticate(ctx, username, credType, password); identity != nil {
+		return s.generateJWT(identity)
+	}
+	return "", errors.Unauthorized("Invalid login credentials. Please try again.")
+}
 
-	// TODO: the following authentication logic is only for demo purpose
-	if username == "demo" && password == "pass" {
-		logger.Infof("authentication successful")
-		return entity.User{ID: "100", Email: "demo@test.io"}
+// authenticate authenticates a user using username/email and password.
+// If username/email and password are correct, an identity is returned. Otherwise, nil is returned.
+func (s service) authenticate(ctx context.Context, credential, credType, password string) Identity {
+	logger := s.logger.With(ctx, "user", credential)
+
+	if credType != "username" && credType != "email" {
+		logger.Errorf("invalid credential type: %s", credType)
+		return nil
+	}
+	var user *entity.User
+	if credType == "email" {
+		if err := validation.Validate(credential, is.Email); err != nil {
+			logger.Errorf("invalid email: %s", credential)
+			return nil
+		}
+
+		userData, err := s.repo.FindVerifiedUserByEmail(ctx, credential)
+		user = userData
+		if err != nil {
+			logger.Errorf("failed to find user by email: %v", err)
+			return nil
+		}
+	} else {
+		userData, err := s.repo.FindVerifiedUserByUsername(ctx, credential)
+		if err != nil {
+			logger.Errorf("failed to find user by username: %v", err)
+			return nil
+		}
+		user = userData
+	}
+
+	fmt.Println(user)
+	validPass := entity.CheckPasswordHash(password, user.Password)
+	if validPass {
+		return user
 	}
 
 	logger.Infof("authentication failed")
@@ -151,12 +181,4 @@ func (s service) generateJWT(identity Identity) (string, error) {
 		"email": identity.GetEmail(),
 		"exp":   time.Now().Add(time.Duration(s.cfg.TokenExpiration) * time.Hour).Unix(),
 	}).SignedString([]byte(s.cfg.SigningKey))
-}
-
-// generateEmailVerificationHash generates a hash for email verification.
-func generateEmailVerificationHash(email string) string {
-	hash := sha1.New()
-	hash.Write([]byte(email))
-	bs := hash.Sum(nil)
-	return fmt.Sprintf("%x", bs)
 }

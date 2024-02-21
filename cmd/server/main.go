@@ -85,7 +85,7 @@ func buildHandler(logger log.Logger, db *dbcontext.DB, cfg *config.Config) http.
 
 	healthcheck.RegisterHandlers(router, Version)
 
-	rg := router.Group("/v1")
+	rg := router.Group("/api/v1")
 
 	authJWTHandler := auth.JWTHandler(cfg.JWTSigningKey)
 
@@ -109,7 +109,7 @@ func buildHandler(logger log.Logger, db *dbcontext.DB, cfg *config.Config) http.
 			FromEmail: cfg.SMTPConfig.FromEmail,
 		},
 	}
-	auth.RegisterHandlers(rg.Group(""),
+	auth.RegisterHandlers(rg.Group(""), router.Group(""),
 		auth.NewService(auth.NewRepository(db, logger), logger, authCfg),
 		logger,
 	)
