@@ -2,7 +2,6 @@ package auth
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"testing"
 
@@ -14,7 +13,6 @@ import (
 type mockService struct{}
 
 func (mockService) Login(_ context.Context, credType, cred, password string) (string, error) {
-	fmt.Println(credType, cred, password)
 	if credType == "username" && cred == "test" && password == "pass" {
 		return "token-100", nil
 	}

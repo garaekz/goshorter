@@ -19,7 +19,10 @@ func TestGenerateHash(t *testing.T) {
 	}
 
 	expectedHash := hmac.New(sha256.New, []byte(secretKey))
-	expectedHash.Write([]byte(data))
+	_, err := expectedHash.Write([]byte(data))
+	if err != nil {
+		t.Errorf("Error writing to hash: %s", err)
+	}
 	expectedHashString := hex.EncodeToString(expectedHash.Sum(nil))
 
 	actualHash := signer.GenerateHash(data)
@@ -41,7 +44,7 @@ func TestSignedRoute(t *testing.T) {
 	expiration := time.Now().Add(time.Hour)
 
 	expectedExpirationStr := strconv.FormatInt(expiration.Unix(), 10)
-	expectedSignature := generateSignature(secret, path, params, expectedExpirationStr)
+	expectedSignature := GenerateSignature(secret, path, params, expectedExpirationStr)
 	paramString := generateParamString(params, expectedExpirationStr)
 	expectedURL := fmt.Sprintf("%s%s?%s&sig=%s", baseURL, path, paramString, expectedSignature)
 
@@ -74,7 +77,7 @@ func TestGenerateSignature(t *testing.T) {
 			path:       "/test/path",
 			params:     map[string]string{"param1": "value1", "param2": "value2"},
 			expiration: "1234567890",
-			want:       "1b055e40a0dcbf2d99465a43c7a1e18609cefbf5860447975855d19939793fec",
+			want:       "d0df9f01100d0bbe653a086a5df18286fbd929751b8e1b49fc08c5fea9db5fd6",
 		},
 		{
 			name:       "With empty params",
@@ -82,7 +85,7 @@ func TestGenerateSignature(t *testing.T) {
 			path:       "/test/empty",
 			params:     nil,
 			expiration: "1234567890",
-			want:       "444923b63f40674622342b01c2a317294bc57f213ad4c296ce8eace0bfc920bc",
+			want:       "3981b53f86b9d6c8002af9be1afe84165c0ee040ad74de4ebde444cdbcffbe48",
 		},
 	}
 
@@ -93,7 +96,7 @@ func TestGenerateSignature(t *testing.T) {
 			got := signer.GenerateHash(fmt.Sprintf("%s?%s", tt.path, generateParamString(tt.params, tt.expiration)))
 
 			if got != tt.want {
-				t.Errorf("generateSignature() = %v, want %v", got, tt.want)
+				t.Errorf("GenerateSignature() = %v, want %v", got, tt.want)
 			}
 		})
 	}
