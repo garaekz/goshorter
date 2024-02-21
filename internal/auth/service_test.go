@@ -52,10 +52,12 @@ type mockRepo struct {
 }
 
 var goodUser = entity.User{
-	ID:       "test",
-	Username: "test",
-	Email:    "test@test.io",
-	Password: "pass",
+	ID:        "test",
+	FirstName: "John",
+	LastName:  "Doe",
+	Username:  "test",
+	Email:     "test@test.io",
+	Password:  "pass",
 }
 
 func (*mockRepo) Register(_ context.Context, _ entity.User) error {

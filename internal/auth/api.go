@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/garaekz/goshorter/internal/errors"
@@ -40,7 +41,10 @@ func (r resource) register(c *routing.Context) error {
 		return err
 	}
 
-	return c.WriteWithStatus(user, http.StatusCreated)
+	return c.WriteWithStatus(response{
+		Status:  "success",
+		Message: fmt.Sprintf("Welcome %s!. An email has been sent to %s. Please verify your account.", user.GetFullName(), user.GetEmail()),
+	}, http.StatusCreated)
 }
 
 // verify returns a handler that handles user verification request.
