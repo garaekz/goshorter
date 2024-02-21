@@ -39,7 +39,7 @@ func Endpoint(t *testing.T, router *routing.Router, tc APITestCase) {
 			if pattern != tc.WantResponse {
 				assert.Contains(t, res.Body.String(), pattern, "response mismatch")
 			} else {
-				assert.JSONEq(t, tc.WantResponse, res.Body.String(), "response mismatch1")
+				assert.JSONEq(t, tc.WantResponse, res.Body.String(), "response mismatch")
 			}
 		}
 	})

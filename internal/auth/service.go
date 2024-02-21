@@ -152,8 +152,8 @@ func (s service) Verify(ctx context.Context, userID, signature, expiration strin
 
 // Login authenticates a user and generates a JWT token if authentication succeeds.
 // Otherwise, an error is returned.
-func (s service) Login(ctx context.Context, username, credType, password string) (string, error) {
-	if identity := s.authenticate(ctx, username, credType, password); identity != nil {
+func (s service) Login(ctx context.Context, credType, username, password string) (string, error) {
+	if identity := s.authenticate(ctx, credType, username, password); identity != nil {
 		return s.generateJWT(identity)
 	}
 	return "", errors.Unauthorized("Invalid login credentials. Please try again.")
@@ -161,7 +161,7 @@ func (s service) Login(ctx context.Context, username, credType, password string)
 
 // authenticate authenticates a user using username/email and password.
 // If username/email and password are correct, an identity is returned. Otherwise, nil is returned.
-func (s service) authenticate(ctx context.Context, credential, credType, password string) Identity {
+func (s service) authenticate(ctx context.Context, credType, credential, password string) Identity {
 	logger := s.logger.With(ctx, "user", credential)
 
 	if credType != "username" && credType != "email" {

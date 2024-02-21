@@ -96,7 +96,7 @@ func login(service Service, logger log.Logger) routing.Handler {
 			credentialType = "email"
 		}
 
-		token, err := service.Login(c.Request.Context(), credential, credentialType, req.Password)
+		token, err := service.Login(c.Request.Context(), credentialType, credential, req.Password)
 		if err != nil {
 			return err
 		}
