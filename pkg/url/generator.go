@@ -33,14 +33,14 @@ func SignedRoute(baseURL, secret, path string, params map[string]string, expirat
 		expirationStr = strconv.FormatInt(expiration.Unix(), 10)
 	}
 
-	signature := generateSignature(secret, path, params, expirationStr)
+	signature := GenerateSignature(secret, path, params, expirationStr)
 	paramString := generateParamString(params, expirationStr)
 	return fmt.Sprintf("%s%s?%s&sig=%s", baseURL, path, paramString, url.QueryEscape(signature))
 }
 
 // VerifySignature verifies the signature of a signed URL.
 func VerifySignature(path, providedSignature, expiration, secret string, params map[string]string) bool {
-	generatedSignature := generateSignature(secret, path, params, expiration)
+	generatedSignature := GenerateSignature(secret, path, params, expiration)
 
 	// Decode the provided signature before comparing
 	providedDecoded, err := url.QueryUnescape(providedSignature)
@@ -56,8 +56,8 @@ func TemporarySignedRoute(baseURL, secret string, path string, duration time.Dur
 	return SignedRoute(baseURL, secret, path, params, &expiration)
 }
 
-// generateSignature generates a signature for the given path and parameters.
-func generateSignature(secret, path string, params map[string]string, expiration string) string {
+// GenerateSignature generates a signature for the given path and parameters.
+func GenerateSignature(secret, path string, params map[string]string, expiration string) string {
 	if params == nil {
 		params = make(map[string]string)
 	}

@@ -105,17 +105,17 @@ func (s service) Register(ctx context.Context, req RegisterRequest) (User, error
 		CreatedAt: now,
 		UpdatedAt: now,
 	}
-	// err = s.repo.Register(ctx, user)
-	// if err != nil {
-	// 	if err.Error() == errDuplicateEmail.Error() {
-	// 		return User{}, errors.BadRequest("email already exists")
-	// 	}
-	// 	if err.Error() == errDuplicateUsername.Error() {
-	// 		return User{}, errors.BadRequest("username already exists")
-	// 	}
+	err = s.repo.Register(ctx, user)
+	if err != nil {
+		if err.Error() == errDuplicateEmail.Error() {
+			return User{}, errors.BadRequest("email already exists")
+		}
+		if err.Error() == errDuplicateUsername.Error() {
+			return User{}, errors.BadRequest("username already exists")
+		}
 
-	// 	return User{}, err
-	// }
+		return User{}, err
+	}
 
 	err = s.cfg.Mailer.SendValidateAccountMail(user.Email, user.ID, s.cfg.BaseURL, s.cfg.SecretKey, s.cfg.ServerPort)
 	if err != nil {
