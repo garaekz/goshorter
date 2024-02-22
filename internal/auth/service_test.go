@@ -9,9 +9,30 @@ import (
 	"github.com/garaekz/goshorter/internal/errors"
 	"github.com/garaekz/goshorter/pkg/log"
 	"github.com/garaekz/goshorter/pkg/url"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"go.uber.org/zap/zaptest/observer"
 	"golang.org/x/crypto/bcrypt"
 )
+
+// setupNewService is a helper function to create a new service instance for testing.
+func setupNewService() (*service, *observer.ObservedLogs) {
+	repo := &mockRepo{}
+	logger, watcher := log.NewForTest()
+	cfg := ServiceConfig{
+		Mailer:          &mockMailer{},
+		SigningKey:      "signingKey",
+		SecretKey:       "secretKey",
+		TokenExpiration: 1,
+	}
+
+	return &service{
+		repo:   repo,
+		logger: logger,
+		cfg:    cfg,
+	}, watcher
+}
 
 func TestNewService(t *testing.T) {
 	repo := &mockRepo{}
@@ -27,13 +48,7 @@ func TestNewService(t *testing.T) {
 
 func TestRegister(t *testing.T) {
 	ctx := context.Background()
-	repo := &mockRepo{}
-
-	// Create a service instance
-	s := service{
-		repo: repo,
-		cfg:  *testConfig,
-	}
+	s, _ := setupNewService()
 
 	req := RegisterRequest{
 		LastName: "test",
@@ -85,13 +100,7 @@ func TestRegister(t *testing.T) {
 
 func TestVerify(t *testing.T) {
 	ctx := context.Background()
-	repo := &mockRepo{}
-
-	// Create a service instance
-	s := service{
-		repo: repo,
-		cfg:  *testConfig,
-	}
+	s, _ := setupNewService()
 
 	// Invalid token
 	err := s.Verify(ctx, goodUser.ID, "invalid", "0")
@@ -123,6 +132,92 @@ func TestVerify(t *testing.T) {
 
 }
 
+func Test_authenticate(t *testing.T) {
+	ctx := context.Background()
+	s, watcher := setupNewService()
+
+	// Invalid credential type
+	user := s.authenticate(ctx, "invalid", "test", "pass")
+	assert.Nil(t, user)
+	assert.Contains(t, watcher.All()[0].Message, "invalid credential type: invalid")
+
+	// Invalid email format
+	user = s.authenticate(ctx, "email", "invalid", "pass")
+	assert.Nil(t, user)
+	assert.Contains(t, watcher.All()[1].Message, "invalid email: invalid")
+
+	// Invalid email
+	user = s.authenticate(ctx, "email", "invalid@test.io", "pass")
+	assert.Nil(t, user)
+	assert.Contains(t, watcher.All()[2].Message, "failed to find user by email: ")
+
+	// Invalid username
+	user = s.authenticate(ctx, "username", "invalid", "pass")
+	assert.Nil(t, user)
+	assert.Contains(t, watcher.All()[3].Message, "failed to find user by username: ")
+
+	// Password mismatch
+	user = s.authenticate(ctx, "username", goodUser.Username, "invalid")
+	assert.Nil(t, user)
+	assert.Contains(t, watcher.All()[4].Message, "authentication failed")
+}
+
+func TestService_GenerateJWT(t *testing.T) {
+	mockIdentity := new(MockIdentity)
+	mockIdentity.On("GetID").Return("123")
+	mockIdentity.On("GetEmail").Return("user@example.com")
+	s, _ := setupNewService()
+
+	tokenString, err := s.generateJWT(mockIdentity)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, tokenString)
+
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			t.Errorf("Unexpected signing method: %v", token.Header["alg"])
+		}
+		return []byte(s.cfg.SigningKey), nil
+	})
+
+	assert.NoError(t, err)
+	assert.True(t, token.Valid)
+
+	claims, ok := token.Claims.(jwt.MapClaims)
+	assert.True(t, ok)
+
+	assert.Equal(t, "123", claims["id"])
+	assert.Equal(t, "user@example.com", claims["email"])
+
+	// Verificar expiración
+	expiration, ok := claims["exp"].(float64)
+	assert.True(t, ok)
+	assert.WithinDuration(t, time.Now().Add(time.Duration(s.cfg.TokenExpiration)*time.Hour), time.Unix(int64(expiration), 0), 5*time.Second)
+}
+
+func TestLogin(t *testing.T) {
+	ctx := context.Background()
+	s, _ := setupNewService()
+
+	// Success
+	token, err := s.Login(ctx, "username", "test", "pass")
+	assert.Nil(t, err)
+	assert.NotEmpty(t, token)
+}
+
+type MockIdentity struct {
+	mock.Mock
+}
+
+func (m *MockIdentity) GetID() string {
+	args := m.Called()
+	return args.String(0)
+}
+
+func (m *MockIdentity) GetEmail() string {
+	args := m.Called()
+	return args.String(0)
+}
+
 type mockMailer struct{}
 
 func (*mockMailer) SendValidateAccountMail(to, _, _, _ string, _ int) error {
@@ -142,13 +237,14 @@ type mockRepo struct {
 }
 
 var now = time.Now()
+var goodPass, _ = entity.HashPassword("pass")
 var goodUser = entity.User{
 	ID:         "test",
 	FirstName:  "John",
 	LastName:   "Doe",
 	Username:   "test",
 	Email:      "test@test.io",
-	Password:   "pass",
+	Password:   goodPass,
 	VerifiedAt: &now,
 }
 var failUser = entity.User{
@@ -196,7 +292,7 @@ func (*mockRepo) FindVerifiedUserByEmail(_ context.Context, email string) (*enti
 	if email == goodUser.Email {
 		return &goodUser, nil
 	}
-	return &entity.User{}, nil
+	return &entity.User{}, errors.NotFound("user not found")
 }
 
 func (*mockRepo) Update(_ context.Context, user entity.User) error {
@@ -215,5 +311,5 @@ func (*mockRepo) FindVerifiedUserByUsername(_ context.Context, username string) 
 	if username == goodUser.Username {
 		return &goodUser, nil
 	}
-	return &entity.User{}, nil
+	return &entity.User{}, errors.NotFound("user not found")
 }
