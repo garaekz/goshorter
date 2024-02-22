@@ -21,8 +21,12 @@ func TestCurrentUser(t *testing.T) {
 	}
 }
 
-func TestHandler(t *testing.T) {
+func TestJWTHandler(t *testing.T) {
 	assert.NotNil(t, JWTHandler("test"))
+}
+
+func TestBearerHandler(t *testing.T) {
+	assert.NotNil(t, BearerHandler("secret"))
 }
 
 func Test_handleToken(t *testing.T) {

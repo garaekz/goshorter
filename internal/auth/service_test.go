@@ -79,10 +79,12 @@ func TestRegister(t *testing.T) {
 	assert.Equal(t, errors.BadRequest("username already exists"), err)
 
 	// Error sending email
+	req.Username = "fail"
 	req.Email = "fail@test.io"
 	user, err = s.Register(ctx, req)
 	assert.NotNil(t, err)
 	assert.Empty(t, user)
+	assert.Equal(t, errors.InternalServerError("error sending email"), err)
 
 	// Success register
 	req.Username = "success"
@@ -202,6 +204,12 @@ func TestLogin(t *testing.T) {
 	token, err := s.Login(ctx, "username", "test", "pass")
 	assert.Nil(t, err)
 	assert.NotEmpty(t, token)
+
+	// Invalid credentials
+	token, err = s.Login(ctx, "username", "invalid", "pass")
+	assert.NotNil(t, err)
+	assert.Equal(t, "", token)
+	assert.Equal(t, errors.Unauthorized("Invalid login credentials. Please try again."), err)
 }
 
 type MockIdentity struct {
